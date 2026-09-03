@@ -343,52 +343,10 @@
     white-space: nowrap;
     letter-spacing: 0.01em;
   }
-  .tag[data-cat="Incident"] { background: #fdecec; color: #c0343a; }
-  .tag[data-cat="Service Request"] { background: #e3f3fd; color: #0a75b5; }
-  .tag[data-cat="Support Ticket"] { background: #e3f7f4; color: #0b8f7d; }
   .tag[data-cat="Meeting"] { background: #fdf0e3; color: #b5650a; }
-  .tag[data-cat="Project"] { background: #ecebff; color: #5a48e0; }
+  .tag[data-cat="Support"] { background: #e3f3fd; color: #0a75b5; }
   .tag[data-cat="Learning"] { background: #eafbe7; color: #22883e; }
-  .tag[data-cat="Admin"] { background: #eef0f4; color: #4a5568; }
-  .tag[data-cat="Work"] { background: var(--accent-soft); color: var(--accent-hover); }
   .tag[data-cat="Other"] { background: #f1f1f5; color: #5b5e6e; }
-  .ticket-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 9px;
-    border-radius: 6px;
-    background: #eef0f6;
-    color: #4a5568;
-    white-space: nowrap;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-  .prio-tag {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 20px;
-    white-space: nowrap;
-  }
-  .prio-tag[data-prio="Low"] { background: #eef0f4; color: #5b6472; }
-  .prio-tag[data-prio="Medium"] { background: #e7eefc; color: #2b5cc4; }
-  .prio-tag[data-prio="High"] { background: #fdeede; color: #b5650a; }
-  .prio-tag[data-prio="Urgent"] { background: #fdecec; color: #d13438; }
-  .status-select {
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 6px 8px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border);
-    background: #fbfbfe;
-    color: var(--text);
-    cursor: pointer;
-    flex-shrink: 0;
-    outline: none;
-    font-family: inherit;
-  }
-  .status-select[data-status="Open"] { color: #5b6472; }
-  .status-select[data-status="In Progress"] { color: #b5650a; background: #fdf6ec; border-color: #f0dcc0; }
-  .status-select[data-status="Resolved"] { color: var(--done); background: var(--done-soft); border-color: #bfe9d8; }
   .duration-tag {
     font-size: 11px;
     font-weight: 700;
@@ -457,93 +415,9 @@
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .entry-row input[type="number"] {
-    font-size: 14px;
-    padding: 11px 13px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    font-family: inherit;
-    background: #fbfbfe;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  }
-  .entry-row input[type="number"]:hover { border-color: #cfd1e6; }
-  .entry-row input[type="number"]:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px var(--accent-soft);
-    background: #fff;
-  }
-  #taskTicket { flex: 0 0 190px; }
-  .theme-toggle {
-    background: var(--card);
-    border: 1px solid var(--border);
-    color: var(--text);
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    font-size: 18px;
-    box-shadow: var(--shadow-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    flex-shrink: 0;
-  }
-  .theme-toggle:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-
-  /* ---- Dark mode ---- */
-  :root[data-theme="dark"] {
-    --bg-1: #14151f;
-    --bg-2: #191a26;
-    --card: #1e2030;
-    --text: #e6e7ef;
-    --muted: #9a9db2;
-    --border: #2c2e42;
-    --accent: #8b7ffb;
-    --accent-2: #a99cff;
-    --accent-hover: #b3a7ff;
-    --accent-soft: #2a2846;
-    --danger: #f2686d;
-    --danger-soft: #3a2226;
-    --done: #35c99a;
-    --done-soft: #14302a;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 10px 24px -12px rgba(0, 0, 0, 0.55);
-    --shadow-lg: 0 20px 40px -18px rgba(0, 0, 0, 0.65);
-  }
-  :root[data-theme="dark"] body {
-    background:
-      radial-gradient(1200px 500px at 10% -10%, #241f4d 0%, transparent 55%),
-      radial-gradient(900px 500px at 100% 0%, #16283f 0%, transparent 50%),
-      linear-gradient(180deg, var(--bg-1), var(--bg-2) 60%);
-  }
-  :root[data-theme="dark"] h1 {
-    background: linear-gradient(90deg, #eceaff, #b3a7ff);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  :root[data-theme="dark"] input[type="text"],
-  :root[data-theme="dark"] select,
-  :root[data-theme="dark"] input[type="date"],
-  :root[data-theme="dark"] input[type="time"],
-  :root[data-theme="dark"] .entry-row input[type="number"],
-  :root[data-theme="dark"] .status-select {
-    background: #262838;
-    color: var(--text);
-  }
-  :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
-  :root[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(0.8);
-  }
-  :root[data-theme="dark"] .clock-row,
-  :root[data-theme="dark"] .day-block { background: #191b28; }
-  :root[data-theme="dark"] ul.task-list li:hover { background: #23253a; }
-
   @media (max-width: 560px) {
     .entry-row { flex-wrap: wrap; }
-    .entry-row select, .entry-row .btn-primary, #taskTicket { width: 100%; flex: 1 1 100%; }
+    .entry-row select, .entry-row .btn-primary { width: 100%; }
     .header-text { gap: 10px; }
     h1 { font-size: 20px; }
   }
@@ -558,32 +432,18 @@
         <div class="subtitle">Log your daily tasks and time spent, then export a weekly report for your manager.</div>
       </div>
     </div>
-    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">🌙</button>
   </header>
 
   <div class="card">
     <h2>Log a task</h2>
     <div class="entry-row">
       <input type="text" id="taskInput" placeholder="What did you work on?" autocomplete="off">
-      <input type="text" id="taskTicket" placeholder="Ticket # (optional)" autocomplete="off">
-    </div>
-    <div class="entry-row">
       <select id="taskCategory">
-        <option value="Incident">Incident</option>
-        <option value="Service Request">Service Request</option>
-        <option value="Support Ticket" selected>Support Ticket</option>
+        <option value="Support">Support Ticket</option>
         <option value="Work">Work</option>
         <option value="Meeting">Meeting</option>
-        <option value="Project">Project</option>
         <option value="Learning">Learning</option>
-        <option value="Admin">Admin</option>
         <option value="Other">Other</option>
-      </select>
-      <select id="taskPriority">
-        <option value="Low">Low</option>
-        <option value="Medium" selected>Medium</option>
-        <option value="High">High</option>
-        <option value="Urgent">Urgent</option>
       </select>
       <input type="number" id="taskMinutes" placeholder="Mins" min="0" step="5">
       <button class="btn-primary" id="addBtn">Add</button>
@@ -682,12 +542,6 @@ function getDayData(key) {
     if (!d.tasks) d.tasks = [];
     if (typeof d.submitted !== "boolean") d.submitted = false;
   }
-  // Normalize each task to the current shape, migrating older entries.
-  d.tasks.forEach(t => {
-    if (t.status === undefined) t.status = t.done ? "Resolved" : "Open";
-    if (t.priority === undefined) t.priority = "Medium";
-    if (t.ticket === undefined) t.ticket = "";
-  });
   return d;
 }
 
@@ -719,9 +573,7 @@ let currentDate = new Date();
 let data = loadData();
 
 const taskInput = document.getElementById("taskInput");
-const taskTicket = document.getElementById("taskTicket");
 const taskCategory = document.getElementById("taskCategory");
-const taskPriority = document.getElementById("taskPriority");
 const addBtn = document.getElementById("addBtn");
 const dayLabel = document.getElementById("dayLabel");
 const taskList = document.getElementById("taskList");
@@ -743,26 +595,6 @@ const submitDayBtn = document.getElementById("submitDayBtn");
 const submitStatus = document.getElementById("submitStatus");
 const taskMinutesInput = document.getElementById("taskMinutes");
 const taskTimeBadge = document.getElementById("taskTimeBadge");
-
-// ---- Theme (dark / light) ----
-const THEME_KEY = "taskTrackerTheme";
-const themeToggle = document.getElementById("themeToggle");
-function applyTheme(t) {
-  if (t === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
-    themeToggle.textContent = "☀️";
-  } else {
-    document.documentElement.removeAttribute("data-theme");
-    themeToggle.textContent = "🌙";
-  }
-}
-let theme = localStorage.getItem(THEME_KEY) || "light";
-applyTheme(theme);
-themeToggle.addEventListener("click", () => {
-  theme = theme === "dark" ? "light" : "dark";
-  localStorage.setItem(THEME_KEY, theme);
-  applyTheme(theme);
-});
 
 function currentTimeStr() {
   const now = new Date();
@@ -800,24 +632,16 @@ function renderDay() {
   emptyMsg.style.display = entries.length ? "none" : "block";
   entries.forEach((entry, idx) => {
     const li = document.createElement("li");
-    const statusSel = document.createElement("select");
-    statusSel.className = "status-select";
-    statusSel.dataset.status = entry.status;
-    ["Open", "In Progress", "Resolved"].forEach(s => {
-      const o = document.createElement("option");
-      o.value = s;
-      o.textContent = s;
-      if (s === entry.status) o.selected = true;
-      statusSel.appendChild(o);
-    });
-    statusSel.addEventListener("change", () => {
-      entry.status = statusSel.value;
-      entry.done = statusSel.value === "Resolved";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!entry.done;
+    cb.addEventListener("change", () => {
+      entry.done = cb.checked;
       saveData(data);
       renderDay();
     });
     const span = document.createElement("span");
-    span.className = "task-text" + (entry.status === "Resolved" ? " done" : "");
+    span.className = "task-text" + (entry.done ? " done" : "");
     span.textContent = entry.text;
     const tag = document.createElement("span");
     tag.className = "tag";
@@ -831,25 +655,14 @@ function renderDay() {
       saveData(data);
       renderDay();
     });
-    li.appendChild(statusSel);
+    li.appendChild(cb);
     li.appendChild(span);
-    if (entry.ticket) {
-      const ticketBadge = document.createElement("span");
-      ticketBadge.className = "ticket-badge";
-      ticketBadge.textContent = "#" + entry.ticket;
-      li.appendChild(ticketBadge);
-    }
     if (entry.minutes) {
       const duration = document.createElement("span");
       duration.className = "duration-tag";
       duration.textContent = fmtMinutes(entry.minutes);
       li.appendChild(duration);
     }
-    const prio = document.createElement("span");
-    prio.className = "prio-tag";
-    prio.dataset.prio = entry.priority;
-    prio.textContent = entry.priority;
-    li.appendChild(prio);
     li.appendChild(tag);
     li.appendChild(del);
     taskList.appendChild(li);
@@ -864,25 +677,15 @@ function addTask() {
   const key = fmtDate(currentDate);
   const day = getDayData(key);
   const minutes = Math.max(0, Number(taskMinutesInput.value) || 0);
-  day.tasks.push({
-    text,
-    ticket: taskTicket.value.trim(),
-    category: taskCategory.value,
-    priority: taskPriority.value,
-    status: "Open",
-    done: false,
-    minutes,
-  });
+  day.tasks.push({ text, category: taskCategory.value, done: false, minutes });
   saveData(data);
   taskInput.value = "";
-  taskTicket.value = "";
   taskMinutesInput.value = "";
   renderDay();
 }
 
 addBtn.addEventListener("click", addTask);
 taskInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
-taskTicket.addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
 taskMinutesInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addTask(); });
 
 function saveClockTimes() {
@@ -1011,9 +814,7 @@ function renderWeekPreview() {
       day.entries.forEach(entry => {
         const li = document.createElement("li");
         const durationText = entry.minutes ? ` (${fmtMinutes(entry.minutes)})` : "";
-        const sym = entry.status === "Resolved" ? "✓" : (entry.status === "In Progress" ? "◐" : "○");
-        const ticketText = entry.ticket ? `#${entry.ticket} ` : "";
-        li.textContent = `${sym} ${ticketText}[${entry.category}] ${entry.text}${durationText} — ${entry.priority}`;
+        li.textContent = `${entry.done ? "✓" : "•"} [${entry.category}] ${entry.text}${durationText}`;
         ul.appendChild(li);
       });
       block.appendChild(ul);
@@ -1085,14 +886,11 @@ exportPdfBtn.addEventListener("click", () => {
   doc.setFontSize(10);
   doc.text(`${days[0].date.toDateString()} — ${weekEnd.toDateString()}`, marginX, 52);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11.5);
-  doc.text("TechSquad LLC", pageWidth - marginX, 28, { align: "right" });
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.5);
-  doc.text("Manish Kumar Sabbani", pageWidth - marginX, 44, { align: "right" });
+  doc.setFontSize(10.5);
+  doc.text("Manish Kumar Sabbani", pageWidth - marginX, 32, { align: "right" });
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.text("Technical Support Analyst", pageWidth - marginX, 57, { align: "right" });
+  doc.setFontSize(9);
+  doc.text("Technical Support Analyst", pageWidth - marginX, 46, { align: "right" });
   doc.setTextColor(0);
   y = 100;
 
@@ -1205,31 +1003,23 @@ exportPdfBtn.addEventListener("click", () => {
       doc.setFontSize(9.5);
       day.entries.forEach(entry => {
         const durationText = entry.minutes ? `  (${fmtMinutes(entry.minutes)})` : "";
-        const ticketText = entry.ticket ? `#${entry.ticket}  ` : "";
-        const statusText = entry.status && entry.status !== "Resolved" ? `  ·  ${entry.status}` : "";
-        const raw = `${ticketText}[${entry.category}] ${entry.text}${durationText}  ·  ${entry.priority}${statusText}`;
+        const raw = `[${entry.category}] ${entry.text}${durationText}`;
         const wrapped = doc.splitTextToSize(raw, contentWidth - 78);
         wrapped.forEach((line, i) => {
           ensureSpace(16);
           if (i === 0) {
-            // Draw a small status glyph instead of a unicode checkmark, which
+            // Draw a small checkbox glyph instead of a unicode checkmark, which
             // Helvetica's standard PDF encoding does not reliably render.
             const boxSize = 8;
             const boxX = marginX + 14;
             const boxY = y - boxSize + 1;
-            if (entry.status === "Resolved") {
+            if (entry.done) {
               doc.setFillColor(23, 166, 115);
               doc.roundedRect(boxX, boxY, boxSize, boxSize, 1.5, 1.5, "F");
               doc.setDrawColor(255, 255, 255);
               doc.setLineWidth(1);
               doc.line(boxX + 1.6, boxY + 4.4, boxX + 3.3, boxY + 6.2);
               doc.line(boxX + 3.3, boxY + 6.2, boxX + 6.6, boxY + 2);
-            } else if (entry.status === "In Progress") {
-              doc.setDrawColor(181, 101, 10);
-              doc.setLineWidth(1);
-              doc.roundedRect(boxX, boxY, boxSize, boxSize, 1.5, 1.5, "S");
-              doc.setFillColor(181, 101, 10);
-              doc.circle(boxX + boxSize / 2, boxY + boxSize / 2, 1.6, "F");
             } else {
               doc.setDrawColor(190, 190, 208);
               doc.setLineWidth(1);
