@@ -491,29 +491,6 @@
     flex-shrink: 0;
   }
   .theme-toggle:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-  .backup-note { color: var(--muted); font-size: 13px; margin: 0 0 12px; line-height: 1.55; }
-  .backup-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .save-indicator {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--done);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    margin-left: 4px;
-  }
-  .save-indicator.show { opacity: 1; }
-  .autosave-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px dashed var(--border);
-    flex-wrap: wrap;
-  }
-  .autosave-status { font-size: 12.5px; color: var(--muted); font-weight: 600; }
-  .autosave-status.on { color: var(--done); }
-  .autosave-status.on::before { content: "● "; }
 
   /* ---- Dark mode ---- */
   :root[data-theme="dark"] {
@@ -653,21 +630,6 @@
   </div>
 
   <div class="card">
-    <h2>Data &amp; backup</h2>
-    <p class="backup-note">Your entries auto-save in this browser automatically — clock in today and it's here tomorrow. Keep a backup file in OneDrive so nothing is ever lost and you can open your history on another computer.</p>
-    <div class="backup-controls">
-      <button class="btn-primary" id="saveFileBtn">Save backup file</button>
-      <button class="btn-secondary" id="loadFileBtn">Restore from file</button>
-      <input type="file" id="importInput" accept="application/json,.json" hidden>
-      <span class="save-indicator" id="saveIndicator"></span>
-    </div>
-    <div class="autosave-row" id="autosaveRow" hidden>
-      <button class="btn-secondary" id="linkFileBtn">Turn on auto-save to file</button>
-      <span class="autosave-status" id="autosaveStatus">Auto-save off</span>
-    </div>
-  </div>
-
-  <div class="card">
     <h2>Weekly report</h2>
     <div class="week-controls">
       <label for="weekStart">Week starting</label>
@@ -694,8 +656,6 @@ function loadData() {
 }
 function saveData(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  showSaved();
-  scheduleFileSave();
 }
 
 function fmtDate(d) {
@@ -1306,202 +1266,6 @@ exportPdfBtn.addEventListener("click", () => {
   const filename = `Weekly_Report_${days[0].key}_to_${days[6].key}.pdf`;
   doc.save(filename);
 });
-
-// ---- Data backup & auto-save to file ----
-const saveIndicator = document.getElementById("saveIndicator");
-const saveFileBtn = document.getElementById("saveFileBtn");
-const loadFileBtn = document.getElementById("loadFileBtn");
-const importInput = document.getElementById("importInput");
-const autosaveRow = document.getElementById("autosaveRow");
-const linkFileBtn = document.getElementById("linkFileBtn");
-const autosaveStatus = document.getElementById("autosaveStatus");
-
-let fileHandle = null;    // active handle we auto-save into
-let storedHandle = null;  // remembered handle awaiting a permission re-grant
-let fileSaveTimer = null;
-
-function showSaved() {
-  if (!saveIndicator) return;
-  const t = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  saveIndicator.textContent = "✓ Saved " + t;
-  saveIndicator.classList.add("show");
-}
-
-function currentExport() {
-  return JSON.stringify(
-    { app: "DailyWorkReportTracker", version: 2, exportedAt: new Date().toISOString(), entries: data },
-    null, 2
-  );
-}
-
-function setAutosave(on, text) {
-  if (!autosaveStatus) return;
-  autosaveStatus.textContent = text;
-  autosaveStatus.classList.toggle("on", on);
-}
-
-// Minimal IndexedDB key/value store, used to remember the linked file handle.
-function idbSet(key, val) {
-  return new Promise((res, rej) => {
-    const open = indexedDB.open("ttBackup", 1);
-    open.onupgradeneeded = () => open.result.createObjectStore("kv");
-    open.onsuccess = () => {
-      const tx = open.result.transaction("kv", "readwrite");
-      tx.objectStore("kv").put(val, key);
-      tx.oncomplete = () => { open.result.close(); res(); };
-      tx.onerror = () => rej(tx.error);
-    };
-    open.onerror = () => rej(open.error);
-  });
-}
-function idbGet(key) {
-  return new Promise((res, rej) => {
-    const open = indexedDB.open("ttBackup", 1);
-    open.onupgradeneeded = () => open.result.createObjectStore("kv");
-    open.onsuccess = () => {
-      const tx = open.result.transaction("kv", "readonly");
-      const rq = tx.objectStore("kv").get(key);
-      rq.onsuccess = () => { const v = rq.result; open.result.close(); res(v); };
-      rq.onerror = () => rej(rq.error);
-    };
-    open.onerror = () => rej(open.error);
-  });
-}
-
-async function writeToLinkedFile() {
-  if (!fileHandle) return;
-  try {
-    if ((await fileHandle.queryPermission({ mode: "readwrite" })) !== "granted") {
-      storedHandle = fileHandle;
-      fileHandle = null;
-      linkFileBtn.textContent = "Reconnect auto-save";
-      setAutosave(false, "Auto-save paused — click Reconnect");
-      return;
-    }
-    const w = await fileHandle.createWritable();
-    await w.write(currentExport());
-    await w.close();
-    setAutosave(true, "Auto-saving to " + fileHandle.name);
-  } catch (e) {
-    setAutosave(false, "Auto-save error — click Reconnect");
-  }
-}
-
-// Debounced: called on every saveData() so rapid edits collapse into one write.
-function scheduleFileSave() {
-  if (!fileHandle) return;
-  clearTimeout(fileSaveTimer);
-  fileSaveTimer = setTimeout(writeToLinkedFile, 600);
-}
-
-function downloadJson(json) {
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `task-tracker-backup-${fmtDate(new Date())}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
-// Save backup file: use the file picker when available (lets you overwrite the
-// same OneDrive file each week), otherwise fall back to a normal download.
-saveFileBtn.addEventListener("click", async () => {
-  const json = currentExport();
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: `task-tracker-backup-${fmtDate(new Date())}.json`,
-        types: [{ description: "JSON backup", accept: { "application/json": [".json"] } }],
-      });
-      const w = await handle.createWritable();
-      await w.write(json);
-      await w.close();
-      showSaved();
-      return;
-    } catch (e) {
-      if (e.name === "AbortError") return; // user cancelled
-    }
-  }
-  downloadJson(json);
-});
-
-loadFileBtn.addEventListener("click", () => importInput.click());
-importInput.addEventListener("change", () => {
-  const file = importInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try {
-      const parsed = JSON.parse(reader.result);
-      const entries = parsed && parsed.entries ? parsed.entries : parsed;
-      if (!entries || typeof entries !== "object") throw new Error("bad shape");
-      if (!confirm("Restore this backup? It will replace the data currently in this browser.")) {
-        importInput.value = "";
-        return;
-      }
-      data = entries;
-      saveData(data);
-      renderDay();
-      renderWeekPreview();
-      alert("Backup restored successfully.");
-    } catch (e) {
-      alert("Sorry, that file could not be read as a valid backup.");
-    }
-    importInput.value = "";
-  };
-  reader.readAsText(file);
-});
-
-// Auto-save-to-file (File System Access API) — progressive enhancement.
-if ("showSaveFilePicker" in window) {
-  autosaveRow.hidden = false;
-  idbGet("fileHandle").then(async (h) => {
-    if (!h) { setAutosave(false, "Auto-save off"); return; }
-    try {
-      if ((await h.queryPermission({ mode: "readwrite" })) === "granted") {
-        fileHandle = h;
-        linkFileBtn.textContent = "Change auto-save file";
-        setAutosave(true, "Auto-saving to " + h.name);
-      } else {
-        storedHandle = h;
-        linkFileBtn.textContent = "Reconnect auto-save";
-        setAutosave(false, "Click Reconnect to resume auto-save");
-      }
-    } catch (e) {
-      setAutosave(false, "Auto-save off");
-    }
-  }).catch(() => setAutosave(false, "Auto-save off"));
-
-  linkFileBtn.addEventListener("click", async () => {
-    try {
-      // Reconnecting a remembered file only needs a permission re-grant.
-      if (storedHandle && !fileHandle) {
-        if ((await storedHandle.requestPermission({ mode: "readwrite" })) === "granted") {
-          fileHandle = storedHandle;
-          storedHandle = null;
-          linkFileBtn.textContent = "Change auto-save file";
-          await writeToLinkedFile();
-          return;
-        }
-      }
-      // Otherwise pick/create the file to auto-save into.
-      const handle = await window.showSaveFilePicker({
-        suggestedName: "task-tracker-data.json",
-        types: [{ description: "JSON data", accept: { "application/json": [".json"] } }],
-      });
-      fileHandle = handle;
-      storedHandle = null;
-      await idbSet("fileHandle", handle);
-      linkFileBtn.textContent = "Change auto-save file";
-      await writeToLinkedFile();
-    } catch (e) {
-      if (e.name !== "AbortError") setAutosave(false, "Could not link file on this browser");
-    }
-  });
-}
 
 renderDay();
 renderWeekPreview();
