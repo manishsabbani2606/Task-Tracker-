@@ -1,0 +1,43 @@
+rules_version = '2';
+
+// ============================================================================
+//  WorkLog — Cloud Firestore security rules
+//  Paste this into:  Firebase console -> Build -> Firestore Database -> Rules
+//  then click PUBLISH.
+//
+//  Model:
+//    users/{uid}            -> a user's profile (name, company, role, email)
+//    users/{uid}/days/{date}-> that user's daily log (clock times + tasks)
+//
+//  Access:
+//    - Each signed-in user can read & write ONLY their own profile and days.
+//    - The admin (email below) can READ everyone's profile and days.
+//  NOTE: change the admin email if yours is different.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'sabbanimanish2606@gmail.com';
+    }
+
+    // ---- Profile document: users/{uid} ----
+    match /users/{uid} {
+      allow read:          if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if isSignedIn() && request.auth.uid == uid;
+      allow delete:        if false;
+
+      // ---- Daily logs subcollection: users/{uid}/days/{date} ----
+      match /days/{date} {
+        allow read:                 if isSignedIn() && (request.auth.uid == uid || isAdmin());
+        allow create, update, delete: if isSignedIn() && request.auth.uid == uid;
+      }
+    }
+  }
+}
