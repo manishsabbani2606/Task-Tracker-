@@ -57,6 +57,7 @@
     --shadow-lg: 0 20px 44px -14px rgba(0,0,0,.65);
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   ::selection { background: var(--brand-soft); color: var(--brand-ink); }
   html { -webkit-text-size-adjust: 100%; }
   body {
@@ -115,6 +116,43 @@
   .user-role { font-size: 11px; color: var(--muted); }
 
   .container { max-width: 1060px; margin: 0 auto; padding: 26px 24px 64px; }
+
+  /* ---- Auth screen ---- */
+  .auth-screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: grid; place-items: center; padding: 24px;
+    background:
+      radial-gradient(900px 480px at 12% -10%, color-mix(in srgb, var(--brand) 20%, transparent) 0%, transparent 60%),
+      radial-gradient(700px 480px at 100% 0%, color-mix(in srgb, #38bdf8 16%, transparent) 0%, transparent 55%),
+      var(--bg);
+    overflow: auto;
+  }
+  .auth-card {
+    width: 100%; max-width: 430px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 18px;
+    box-shadow: var(--shadow-lg); padding: 28px 26px;
+  }
+  .auth-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+  .auth-brand .brand-mark { width: 42px; height: 42px; border-radius: 12px; }
+  .auth-title { font-size: 18px; font-weight: 800; color: var(--ink); line-height: 1.1; letter-spacing: -.01em; }
+  .auth-tag { font-size: 12px; color: var(--muted); }
+  .auth-heading { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 3px; }
+  .auth-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 16px; }
+  .auth-tabs { display: flex; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 11px; padding: 4px; margin-bottom: 18px; }
+  .auth-tab { flex: 1; border: none; background: transparent; padding: 9px; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+  .auth-tab.active { background: var(--surface); color: var(--brand-ink); box-shadow: var(--shadow-sm); }
+  .auth-form { display: flex; flex-direction: column; gap: 12px; }
+  .auth-form label { display: flex; flex-direction: column; gap: 5px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+  .auth-form input { font-family: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--field); color: var(--text); outline: none; transition: border-color .15s, box-shadow .15s; }
+  .auth-form input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+  .auth-row { display: flex; gap: 10px; }
+  .auth-row label { flex: 1; }
+  .auth-submit { width: 100%; justify-content: center; padding: 12px; margin-top: 6px; font-size: 14px; }
+  .auth-msg { min-height: 17px; margin-top: 12px; font-size: 12.5px; font-weight: 600; text-align: center; }
+  .auth-msg.err { color: var(--red); }
+  .auth-msg.ok { color: var(--green-ink); }
+  .auth-note { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--faint); text-align: center; line-height: 1.55; }
+  #signOutBtn .ic { width: 17px; height: 17px; }
 
   /* ---- KPI row ---- */
   .kpi-grid {
@@ -349,7 +387,67 @@
 </style>
 </head>
 <body>
-<div class="app">
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="brand-mark"><svg viewBox="0 0 24 24" class="brand-ic"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></span>
+      <div>
+        <div class="auth-title">WorkLog</div>
+        <div class="auth-tag">Daily Work Report Tracker</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignIn" type="button">Sign in</button>
+      <button class="auth-tab" id="tabSignUp" type="button">Create account</button>
+    </div>
+
+    <form id="signInForm" class="auth-form" autocomplete="on">
+      <p class="auth-heading">Welcome back</p>
+      <p class="auth-sub">Sign in to your timesheet profile.</p>
+      <label>Email
+        <input type="email" id="siEmail" placeholder="you@company.com" autocomplete="username">
+      </label>
+      <label>Password
+        <input type="password" id="siPw" placeholder="Your password" autocomplete="current-password">
+      </label>
+      <button type="submit" class="btn btn-primary auth-submit">Sign in</button>
+    </form>
+
+    <form id="signUpForm" class="auth-form" autocomplete="on" hidden>
+      <p class="auth-heading">Create your account</p>
+      <p class="auth-sub">Set up your profile to start tracking your work.</p>
+      <label>Full name
+        <input type="text" id="suName" placeholder="Jane Doe" autocomplete="name">
+      </label>
+      <div class="auth-row">
+        <label>Company
+          <input type="text" id="suCompany" placeholder="Company name" autocomplete="organization">
+        </label>
+        <label>Job title
+          <input type="text" id="suRole" placeholder="Your role" autocomplete="organization-title">
+        </label>
+      </div>
+      <label>Email
+        <input type="email" id="suEmail" placeholder="you@company.com" autocomplete="username">
+      </label>
+      <div class="auth-row">
+        <label>Password
+          <input type="password" id="suPw" placeholder="Min. 6 characters" autocomplete="new-password">
+        </label>
+        <label>Confirm
+          <input type="password" id="suPw2" placeholder="Re-enter password" autocomplete="new-password">
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary auth-submit">Create account</button>
+    </form>
+
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="auth-note">🔒 Your profile and all data are stored only in this browser, on this device — nothing is uploaded or sent anywhere. Keep a backup file so you don't lose your history.</div>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark">
@@ -363,12 +461,13 @@
     <div class="topbar-right">
       <button class="icon-btn" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode"></button>
       <div class="user-chip">
-        <span class="avatar">MS</span>
+        <span class="avatar" id="userAvatar">–</span>
         <div class="user-meta">
-          <span class="user-name">Manish Kumar Sabbani</span>
-          <span class="user-role">Technical Support Analyst · TechSquad LLC</span>
+          <span class="user-name" id="userName">—</span>
+          <span class="user-role" id="userRole">—</span>
         </div>
       </div>
+      <button class="icon-btn" id="signOutBtn" title="Sign out" aria-label="Sign out"><svg class="ic" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
     </div>
   </header>
 
@@ -511,15 +610,21 @@
 <script>
 const STORAGE_KEY = "taskTrackerEntries";
 
+// Data is namespaced per signed-in account, so multiple profiles can share
+// this file on one browser without seeing each other's entries.
+function accountDataKey() {
+  return STORAGE_KEY + "::" + (currentAccount ? currentAccount.id : "none");
+}
 function loadData() {
+  if (!currentAccount) return {};
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return JSON.parse(localStorage.getItem(accountDataKey())) || {};
   } catch (e) {
     return {};
   }
 }
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveData(d) {
+  if (currentAccount) localStorage.setItem(accountDataKey(), JSON.stringify(d));
   showSaved();
   scheduleFileSave();
 }
@@ -582,7 +687,8 @@ function sumTaskMinutes(tasks) {
 }
 
 let currentDate = new Date();
-let data = loadData();
+let currentAccount = null;
+let data = {};
 
 const taskInput = document.getElementById("taskInput");
 const taskTicket = document.getElementById("taskTicket");
@@ -956,15 +1062,16 @@ exportPdfBtn.addEventListener("click", () => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`${days[0].date.toDateString()} — ${weekEnd.toDateString()}`, marginX, 52);
+  const acct = currentAccount || {};
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11.5);
-  doc.text("TechSquad LLC", pageWidth - marginX, 28, { align: "right" });
+  doc.text(acct.company || "", pageWidth - marginX, 28, { align: "right" });
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
-  doc.text("Manish Kumar Sabbani", pageWidth - marginX, 44, { align: "right" });
+  doc.text(acct.name || "", pageWidth - marginX, 44, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.text("Technical Support Analyst", pageWidth - marginX, 57, { align: "right" });
+  doc.text(acct.role || "", pageWidth - marginX, 57, { align: "right" });
   doc.setTextColor(0);
   y = 100;
 
@@ -1409,8 +1516,156 @@ if ("showSaveFilePicker" in window) {
   });
 }
 
-renderDay();
-renderWeekPreview();
+// ---- Accounts & login (local, on-device profiles) ----
+const ACCTS_KEY = "ttAccounts";
+const SESSION_KEY = "ttSession";
+const LEGACY_FLAG = "ttLegacyMigrated";
+
+const authScreen = document.getElementById("authScreen");
+const appRoot = document.getElementById("app");
+const userName = document.getElementById("userName");
+const userRole = document.getElementById("userRole");
+const userAvatar = document.getElementById("userAvatar");
+const signOutBtn = document.getElementById("signOutBtn");
+const tabSignIn = document.getElementById("tabSignIn");
+const tabSignUp = document.getElementById("tabSignUp");
+const signInForm = document.getElementById("signInForm");
+const signUpForm = document.getElementById("signUpForm");
+const authMsg = document.getElementById("authMsg");
+const siEmail = document.getElementById("siEmail");
+const siPw = document.getElementById("siPw");
+const suName = document.getElementById("suName");
+const suCompany = document.getElementById("suCompany");
+const suRole = document.getElementById("suRole");
+const suEmail = document.getElementById("suEmail");
+const suPw = document.getElementById("suPw");
+const suPw2 = document.getElementById("suPw2");
+
+function loadAccounts() {
+  try { return JSON.parse(localStorage.getItem(ACCTS_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveAccounts(a) { localStorage.setItem(ACCTS_KEY, JSON.stringify(a)); }
+
+function randomSalt() {
+  const a = new Uint8Array(16);
+  (crypto.getRandomValues ? crypto : { getRandomValues: arr => { for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256); return arr; } }).getRandomValues(a);
+  return [...a].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+// Passwords are never stored in plain text. A salted SHA-256 hash is kept when
+// the browser exposes Web Crypto; a weaker fallback is used otherwise. Note this
+// is an on-device convenience gate, not server-grade security.
+async function hashPassword(pw, salt) {
+  const text = salt + "::" + pw;
+  if (window.crypto && crypto.subtle) {
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return "s2:" + [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    } catch (e) { /* fall through */ }
+  }
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return "f1:" + (h >>> 0).toString(16);
+}
+function genId() { return "u_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function initials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+function authError(msg) { authMsg.textContent = msg; authMsg.className = "auth-msg err"; }
+function authOk(msg) { authMsg.textContent = msg; authMsg.className = "auth-msg ok"; }
+function clearAuthMsg() { authMsg.textContent = ""; authMsg.className = "auth-msg"; }
+
+function showSignIn() {
+  tabSignIn.classList.add("active"); tabSignUp.classList.remove("active");
+  signInForm.hidden = false; signUpForm.hidden = true; clearAuthMsg();
+}
+function showSignUp() {
+  tabSignUp.classList.add("active"); tabSignIn.classList.remove("active");
+  signUpForm.hidden = false; signInForm.hidden = true; clearAuthMsg();
+}
+tabSignIn.addEventListener("click", showSignIn);
+tabSignUp.addEventListener("click", showSignUp);
+
+function startApp(account) {
+  currentAccount = account;
+  data = loadData();
+  userName.textContent = account.name;
+  userRole.textContent = account.role ? account.role + (account.company ? " · " + account.company : "") : (account.company || "");
+  userAvatar.textContent = initials(account.name);
+  authScreen.hidden = true;
+  appRoot.hidden = false;
+  renderDay();
+  renderWeekPreview();
+}
+
+function logout() {
+  localStorage.removeItem(SESSION_KEY);
+  currentAccount = null;
+  data = {};
+  appRoot.hidden = true;
+  authScreen.hidden = false;
+  signInForm.reset(); signUpForm.reset();
+  showSignIn();
+}
+signOutBtn.addEventListener("click", logout);
+
+signUpForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = suName.value.trim();
+  const email = suEmail.value.trim().toLowerCase();
+  const company = suCompany.value.trim();
+  const role = suRole.value.trim();
+  const pw = suPw.value;
+  const pw2 = suPw2.value;
+  if (!name || !email || !pw) { authError("Please fill in your name, email and password."); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { authError("Please enter a valid email address."); return; }
+  if (pw.length < 6) { authError("Password must be at least 6 characters."); return; }
+  if (pw !== pw2) { authError("Passwords do not match."); return; }
+  const accts = loadAccounts();
+  if (accts[email]) { authError("An account with this email already exists — please sign in."); return; }
+  const wasEmpty = Object.keys(accts).length === 0;
+  const salt = randomSalt();
+  const hash = await hashPassword(pw, salt);
+  const acct = { id: genId(), name, email, company, role, salt, hash, createdAt: new Date().toISOString() };
+  accts[email] = acct;
+  saveAccounts(accts);
+  // One-time: adopt any pre-accounts data into the very first profile created.
+  if (wasEmpty && localStorage.getItem(STORAGE_KEY) && !localStorage.getItem(LEGACY_FLAG)) {
+    localStorage.setItem(STORAGE_KEY + "::" + acct.id, localStorage.getItem(STORAGE_KEY));
+    localStorage.setItem(LEGACY_FLAG, "1");
+  }
+  localStorage.setItem(SESSION_KEY, acct.id);
+  signUpForm.reset();
+  startApp(acct);
+});
+
+signInForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = siEmail.value.trim().toLowerCase();
+  const pw = siPw.value;
+  if (!email || !pw) { authError("Please enter your email and password."); return; }
+  const acct = loadAccounts()[email];
+  if (!acct) { authError("No account found with that email."); return; }
+  const hash = await hashPassword(pw, acct.salt);
+  if (hash !== acct.hash) { authError("Incorrect password."); return; }
+  localStorage.setItem(SESSION_KEY, acct.id);
+  siPw.value = "";
+  startApp(acct);
+});
+
+// Boot: resume an existing session, otherwise show the login screen.
+(function boot() {
+  const sid = localStorage.getItem(SESSION_KEY);
+  if (sid) {
+    const acct = Object.values(loadAccounts()).find(a => a.id === sid);
+    if (acct) { startApp(acct); return; }
+  }
+  appRoot.hidden = true;
+  authScreen.hidden = false;
+  showSignIn();
+})();
 </script>
 </body>
 </html>
