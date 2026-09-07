@@ -665,6 +665,7 @@ let profile = null;        // { fullName, company, role, email }
 let viewingUid = null;     // set when admin is viewing another user (read-only)
 let viewingProfile = null;
 const daySaveTimers = {};
+let daysUnsub = null;       // live Firestore listener for the active user's days
 
 function isAdmin() {
   return !!(currentUser && currentUser.email &&
@@ -682,6 +683,22 @@ async function loadAllDays(uid) {
   return out;
 }
 
+// Live real-time sync: listen to the active user's day documents and re-render
+// whenever anything changes — on this device or another. The first snapshot
+// renders the current data, so no separate initial load is needed.
+function subscribeDays(uid) {
+  stopDaysSync();
+  daysUnsub = db.collection("users").doc(uid).collection("days")
+    .onSnapshot(snap => {
+      const out = {};
+      snap.forEach(doc => { out[doc.id] = doc.data(); });
+      data = out;
+      renderDay();
+      renderWeekPreview();
+    }, err => { console.error("live sync", err); });
+}
+function stopDaysSync() { if (daysUnsub) { daysUnsub(); daysUnsub = null; } }
+
 // Replaces the old localStorage save: persists the day currently being edited.
 function saveData() {
   if (isReadOnly()) return;            // admin viewing someone else — never write
@@ -692,7 +709,7 @@ function scheduleDaySave(dateKey) {
   const uid = currentUser && currentUser.uid;
   if (!uid || isReadOnly()) return;
   clearTimeout(daySaveTimers[dateKey]);
-  daySaveTimers[dateKey] = setTimeout(() => writeDay(uid, dateKey), 500);
+  daySaveTimers[dateKey] = setTimeout(() => writeDay(uid, dateKey), 250);
 }
 async function writeDay(uid, dateKey) {
   const day = data[dateKey];
@@ -1610,9 +1627,8 @@ if (adminUserSelect) adminUserSelect.addEventListener("change", async () => {
     adminHint.textContent = "Read-only view of " + (viewingProfile.fullName || "user") + "'s timesheet";
   }
   setViewingClass();
-  data = await loadAllDays(activeUid());
   currentDate = new Date();
-  renderDay(); renderWeekPreview();
+  subscribeDays(activeUid());
 });
 
 if (adminBtn) adminBtn.addEventListener("click", () => { adminBar.hidden = !adminBar.hidden; });
@@ -1634,15 +1650,14 @@ async function startApp(user) {
   if (isAdmin()) { adminBtn.hidden = false; await populateAdminUsers(); }
   else { adminBtn.hidden = true; adminBar.hidden = true; }
   setViewingClass();
-  data = await loadAllDays(user.uid);
   authScreen.hidden = true;
   appRoot.hidden = false;
   currentDate = new Date();
-  renderDay();
-  renderWeekPreview();
+  subscribeDays(user.uid);
 }
 
 function showAuthScreen() {
+  stopDaysSync();
   currentUser = null; profile = null; viewingUid = null; viewingProfile = null; data = {};
   appRoot.hidden = true;
   authScreen.hidden = false;
