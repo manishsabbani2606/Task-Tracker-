@@ -42,14 +42,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ---- Outgoing invite emails, sent by the "Trigger Email" extension ----
-    //  The admin queues a message here; the extension (running server-side)
-    //  reads it and sends it, then writes back a delivery status.
-    match /mail/{docId} {
-      allow create: if isAdmin();
-      allow read:   if isAdmin();
-    }
-
     // ---- Profile document: users/{uid} ----
     match /users/{uid} {
       allow read:   if isSignedIn() && (request.auth.uid == uid || isAdmin());
