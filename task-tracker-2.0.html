@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WorkLog — Daily Work Report Tracker</title>
+<title>Work Log — Daily Work Report Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -326,6 +326,23 @@
   .empty { color: var(--muted); font-size: 13.5px; font-style: italic; padding: 24px 0; text-align: center; }
   .task-time-row { display: flex; justify-content: flex-end; margin: 12px 0 2px; }
   .task-time-badge { font-size: 13px; font-weight: 700; padding: 8px 15px; border-radius: 999px; background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  /* Daily task table (scrolls horizontally within its box on small screens) */
+  .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: var(--r-sm); }
+  table.task-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+  table.task-table th { text-align: left; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.task-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  table.task-table tbody tr:last-child td { border-bottom: none; }
+  table.task-table tbody tr:hover td { background: var(--surface-2); }
+  table.task-table .c-task { min-width: 230px; }
+  table.task-table .c-task .task-text { font-size: 14px; display: block; }
+  table.task-table .c-task .task-text.done { text-decoration: line-through; color: var(--faint); }
+  table.task-table .c-task .ticket-badge { margin-top: 5px; display: inline-block; }
+  table.task-table .c-user { color: var(--muted); white-space: nowrap; }
+  table.task-table .c-time { white-space: nowrap; font-weight: 600; }
+  table.task-table .c-del { text-align: right; width: 34px; }
+  table.task-table .btn-danger { opacity: .5; }
+  table.task-table tbody tr:hover .btn-danger { opacity: 1; }
+  table.task-table .status-select { min-width: 118px; }
 
   /* ---- Weekly report ---- */
   .week-controls { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -392,7 +409,7 @@
     <div class="auth-brand">
       <span class="brand-mark"><svg viewBox="0 0 24 24" class="brand-ic"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></span>
       <div>
-        <div class="auth-title">WorkLog</div>
+        <div class="auth-title">Work Log</div>
         <div class="auth-tag">Daily Work Report Tracker</div>
       </div>
     </div>
@@ -562,7 +579,7 @@
         <span class="submit-status" id="submitStatus"></span>
       </div>
 
-      <ul class="task-list" id="taskList"></ul>
+      <div class="task-list" id="taskList"></div>
       <div class="empty" id="emptyMsg" style="display:none;">No tasks logged for this day yet.</div>
       <div class="task-time-row">
         <div class="task-time-badge" id="taskTimeBadge">Task time: 0h 0m</div>
@@ -685,6 +702,8 @@ function fmtMinutes(totalMinutes) {
 function sumTaskMinutes(tasks) {
   return tasks.reduce((sum, t) => sum + (Number(t.minutes) || 0), 0);
 }
+// Name of the signed-in user (report owner), used in the task table and PDF.
+function currentUserName() { return currentAccount && currentAccount.name ? currentAccount.name : ""; }
 
 let currentDate = new Date();
 let currentAccount = null;
@@ -775,62 +794,96 @@ function renderDay() {
 
   taskList.innerHTML = "";
   emptyMsg.style.display = entries.length ? "none" : "block";
-  entries.forEach((entry, idx) => {
-    const li = document.createElement("li");
-    const statusSel = document.createElement("select");
-    statusSel.className = "status-select";
-    statusSel.dataset.status = entry.status;
-    ["Open", "In Progress", "Resolved"].forEach(s => {
-      const o = document.createElement("option");
-      o.value = s;
-      o.textContent = s;
-      if (s === entry.status) o.selected = true;
-      statusSel.appendChild(o);
+  if (entries.length) {
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    const table = document.createElement("table");
+    table.className = "task-table";
+    table.innerHTML =
+      "<thead><tr><th>Task</th><th>User</th><th>Category</th><th>SLA Priority</th><th>Status</th><th>Time</th><th></th></tr></thead>";
+    const tbody = document.createElement("tbody");
+    entries.forEach((entry, idx) => {
+      const tr = document.createElement("tr");
+
+      const tdTask = document.createElement("td");
+      tdTask.className = "c-task";
+      const span = document.createElement("span");
+      span.className = "task-text" + (entry.status === "Resolved" ? " done" : "");
+      span.textContent = entry.text;
+      tdTask.appendChild(span);
+      if (entry.ticket) {
+        const tb = document.createElement("span");
+        tb.className = "ticket-badge";
+        tb.textContent = "#" + entry.ticket;
+        tdTask.appendChild(tb);
+      }
+      tr.appendChild(tdTask);
+
+      const tdUser = document.createElement("td");
+      tdUser.className = "c-user";
+      tdUser.textContent = currentUserName();
+      tr.appendChild(tdUser);
+
+      const tdCat = document.createElement("td");
+      const tag = document.createElement("span");
+      tag.className = "tag";
+      tag.dataset.cat = entry.category;
+      tag.textContent = entry.category;
+      tdCat.appendChild(tag);
+      tr.appendChild(tdCat);
+
+      const tdPri = document.createElement("td");
+      const prio = document.createElement("span");
+      prio.className = "prio-tag";
+      prio.dataset.prio = entry.priority;
+      prio.textContent = entry.priority;
+      tdPri.appendChild(prio);
+      tr.appendChild(tdPri);
+
+      const tdStat = document.createElement("td");
+      const statusSel = document.createElement("select");
+      statusSel.className = "status-select";
+      statusSel.dataset.status = entry.status;
+      ["Open", "In Progress", "Resolved"].forEach(s => {
+        const o = document.createElement("option");
+        o.value = s;
+        o.textContent = s;
+        if (s === entry.status) o.selected = true;
+        statusSel.appendChild(o);
+      });
+      statusSel.addEventListener("change", () => {
+        entry.status = statusSel.value;
+        entry.done = statusSel.value === "Resolved";
+        saveData(data);
+        renderDay();
+      });
+      tdStat.appendChild(statusSel);
+      tr.appendChild(tdStat);
+
+      const tdTime = document.createElement("td");
+      tdTime.className = "c-time";
+      tdTime.textContent = entry.minutes ? fmtMinutes(entry.minutes) : "—";
+      tr.appendChild(tdTime);
+
+      const tdDel = document.createElement("td");
+      tdDel.className = "c-del";
+      const del = document.createElement("button");
+      del.className = "btn-danger";
+      del.textContent = "✕";
+      del.addEventListener("click", () => {
+        entries.splice(idx, 1);
+        saveData(data);
+        renderDay();
+      });
+      tdDel.appendChild(del);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
     });
-    statusSel.addEventListener("change", () => {
-      entry.status = statusSel.value;
-      entry.done = statusSel.value === "Resolved";
-      saveData(data);
-      renderDay();
-    });
-    const span = document.createElement("span");
-    span.className = "task-text" + (entry.status === "Resolved" ? " done" : "");
-    span.textContent = entry.text;
-    const tag = document.createElement("span");
-    tag.className = "tag";
-    tag.dataset.cat = entry.category;
-    tag.textContent = entry.category;
-    const del = document.createElement("button");
-    del.className = "btn-danger";
-    del.textContent = "✕";
-    del.addEventListener("click", () => {
-      entries.splice(idx, 1);
-      saveData(data);
-      renderDay();
-    });
-    li.appendChild(statusSel);
-    li.appendChild(span);
-    if (entry.ticket) {
-      const ticketBadge = document.createElement("span");
-      ticketBadge.className = "ticket-badge";
-      ticketBadge.textContent = "#" + entry.ticket;
-      li.appendChild(ticketBadge);
-    }
-    if (entry.minutes) {
-      const duration = document.createElement("span");
-      duration.className = "duration-tag";
-      duration.textContent = fmtMinutes(entry.minutes);
-      li.appendChild(duration);
-    }
-    const prio = document.createElement("span");
-    prio.className = "prio-tag";
-    prio.dataset.prio = entry.priority;
-    prio.textContent = entry.priority;
-    li.appendChild(prio);
-    li.appendChild(tag);
-    li.appendChild(del);
-    taskList.appendChild(li);
-  });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    taskList.appendChild(wrap);
+  }
 
   taskTimeBadge.textContent = `Task time: ${fmtMinutes(sumTaskMinutes(entries))}`;
 }
@@ -1146,90 +1199,97 @@ exportPdfBtn.addEventListener("click", () => {
   });
   y += 22;
 
-  // ---- Daily task details ----
-  ensureSpace(22);
+  // ---- Task Log (weekly task table) ----
+  ensureSpace(34);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("Daily Task Details", marginX, y);
-  y += 14;
+  doc.text("Task Log", marginX, y);
+  y += 12;
 
-  days.forEach((day, idx) => {
-    ensureSpace(30);
+  const tCols = [
+    { h: "Date", w: 0.10 },
+    { h: "Task", w: 0.31, wrap: true },
+    { h: "User", w: 0.15, wrap: true },
+    { h: "Category", w: 0.14, wrap: true },
+    { h: "SLA Priority", w: 0.11 },
+    { h: "Status", w: 0.10 },
+    { h: "Time", w: 0.09 },
+  ];
+  const tW = tCols.map(c => c.w * contentWidth);
+  const tPad = 5, tLine = 10;
 
-    doc.setFillColor(...STRIPE);
-    doc.rect(marginX, y, contentWidth, 20, "F");
+  function taskHeaderRow() {
+    const h = 18;
+    let x = marginX;
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10.5);
-    doc.setTextColor(67, 56, 202);
-    const heading = day.date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-    doc.text(heading, marginX + 8, y + 14);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(...GRAY);
-    const info = `In ${day.clockIn || "—"}  •  Out ${day.clockOut || "—"}  •  ${day.hours > 0 ? fmtHours(day.hours) : "0h 0m"} worked  •  ${fmtMinutes(day.taskMinutes)} logged`;
-    doc.text(info, marginX + contentWidth - 8, y + 14, { align: "right" });
-    doc.setTextColor(0);
-    y += 28;
-
-    if (day.entries.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9.5);
-      doc.setTextColor(150);
-      doc.text("No tasks logged", marginX + 14, y);
-      doc.setTextColor(0);
-      y += 18;
-    } else {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      day.entries.forEach(entry => {
-        const durationText = entry.minutes ? `  (${fmtMinutes(entry.minutes)})` : "";
-        const ticketText = entry.ticket ? `#${entry.ticket}  ` : "";
-        const statusText = entry.status && entry.status !== "Resolved" ? `  ·  ${entry.status}` : "";
-        const raw = `${ticketText}[${entry.category}] ${entry.text}${durationText}  ·  ${entry.priority}${statusText}`;
-        const wrapped = doc.splitTextToSize(raw, contentWidth - 78);
-        wrapped.forEach((line, i) => {
-          ensureSpace(16);
-          if (i === 0) {
-            // Draw a small status glyph instead of a unicode checkmark, which
-            // Helvetica's standard PDF encoding does not reliably render.
-            const boxSize = 8;
-            const boxX = marginX + 14;
-            const boxY = y - boxSize + 1;
-            if (entry.status === "Resolved") {
-              doc.setFillColor(5, 150, 105);
-              doc.roundedRect(boxX, boxY, boxSize, boxSize, 1.5, 1.5, "F");
-              doc.setDrawColor(255, 255, 255);
-              doc.setLineWidth(1);
-              doc.line(boxX + 1.6, boxY + 4.4, boxX + 3.3, boxY + 6.2);
-              doc.line(boxX + 3.3, boxY + 6.2, boxX + 6.6, boxY + 2);
-            } else if (entry.status === "In Progress") {
-              doc.setDrawColor(217, 119, 6);
-              doc.setLineWidth(1);
-              doc.roundedRect(boxX, boxY, boxSize, boxSize, 1.5, 1.5, "S");
-              doc.setFillColor(217, 119, 6);
-              doc.circle(boxX + boxSize / 2, boxY + boxSize / 2, 1.6, "F");
-            } else {
-              doc.setDrawColor(190, 190, 208);
-              doc.setLineWidth(1);
-              doc.roundedRect(boxX, boxY, boxSize, boxSize, 1.5, 1.5, "S");
-            }
-          }
-          doc.setTextColor(20);
-          doc.text(line, marginX + 30, y);
-          y += 15;
-        });
-      });
-    }
-    y += 9;
-
-    if (idx < days.length - 1) {
+    doc.setFontSize(8);
+    tCols.forEach((c, i) => {
+      doc.setFillColor(...PURPLE);
+      doc.rect(x, y, tW[i], h, "F");
       doc.setDrawColor(...GRID);
       doc.setLineWidth(0.5);
-      doc.line(marginX, y - 4, marginX + contentWidth, y - 4);
-      y += 4;
-    }
+      doc.rect(x, y, tW[i], h, "S");
+      doc.setTextColor(255);
+      doc.text(c.h, x + tPad, y + 12);
+      x += tW[i];
+    });
+    doc.setTextColor(0);
+    y += h;
+  }
+
+  const taskRows = [];
+  days.forEach(day => {
+    day.entries.forEach(entry => {
+      taskRows.push([
+        day.date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        (entry.ticket ? "#" + entry.ticket + "  " : "") + entry.text,
+        currentUserName(),
+        entry.category,
+        entry.priority,
+        entry.status || "Open",
+        entry.minutes ? fmtMinutes(entry.minutes) : "—",
+      ]);
+    });
   });
+
+  if (taskRows.length === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9.5);
+    doc.setTextColor(150);
+    doc.text("No tasks logged this week.", marginX, y + 6);
+    doc.setTextColor(0);
+    y += 22;
+  } else {
+    taskHeaderRow();
+    let stripe = false;
+    taskRows.forEach(cells => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      const wrapped = cells.map((txt, i) =>
+        tCols[i].wrap ? doc.splitTextToSize(String(txt), tW[i] - tPad * 2) : [String(txt)]);
+      const lineCount = Math.max(...wrapped.map(w => w.length));
+      const rowH = Math.max(18, lineCount * tLine + 8);
+      if (y + rowH > pageHeight - 40) {
+        doc.addPage();
+        y = 44;
+        taskHeaderRow();
+        stripe = false;
+      }
+      let x = marginX;
+      tCols.forEach((c, i) => {
+        if (stripe) doc.setFillColor(...STRIPE); else doc.setFillColor(255, 255, 255);
+        doc.rect(x, y, tW[i], rowH, "F");
+        doc.setDrawColor(...GRID);
+        doc.setLineWidth(0.5);
+        doc.rect(x, y, tW[i], rowH, "S");
+        doc.setTextColor(20);
+        wrapped[i].forEach((ln, li2) => doc.text(ln, x + tPad, y + 12 + li2 * tLine));
+        x += tW[i];
+      });
+      y += rowH;
+      stripe = !stripe;
+    });
+  }
 
   // ---- Footer page numbers ----
   const pageCount = doc.internal.getNumberOfPages();
