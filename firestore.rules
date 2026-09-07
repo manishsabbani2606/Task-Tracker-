@@ -6,12 +6,15 @@ rules_version = '2';
 //  then click PUBLISH.
 //
 //  Model:
-//    users/{uid}            -> a user's profile (name, company, role, email)
-//    users/{uid}/days/{date}-> that user's daily log (clock times + tasks)
+//    users/{uid}             -> a user's profile (name, company, role, email)
+//    users/{uid}/days/{date} -> that user's daily log (clock times + tasks)
+//    allowed_emails/{email}  -> the invite list (doc id = the invited email)
 //
 //  Access:
-//    - Each signed-in user can read & write ONLY their own profile and days.
-//    - The admin (email below) can READ everyone's profile and days.
+//    - The site is INVITE-ONLY: a new user can only create their profile if
+//      the admin has added their email to allowed_emails (or they are admin).
+//    - Each signed-in user reads & writes ONLY their own profile and days.
+//    - The admin (email below) can READ everyone's data and MANAGE the invite list.
 //  NOTE: change the admin email if yours is different.
 // ============================================================================
 
@@ -27,15 +30,29 @@ service cloud.firestore {
         && request.auth.token.email == 'sabbanimanish2606@gmail.com';
     }
 
+    // A user is "invited" if the admin has added their email to allowed_emails.
+    function isInvited() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/allowed_emails/$(request.auth.token.email));
+    }
+
+    // ---- Invite list: allowed_emails/{email}  (document id = the email) ----
+    match /allowed_emails/{email} {
+      allow read:  if isSignedIn() && (request.auth.token.email == email || isAdmin());
+      allow write: if isAdmin();
+    }
+
     // ---- Profile document: users/{uid} ----
     match /users/{uid} {
-      allow read:          if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      allow create, update: if isSignedIn() && request.auth.uid == uid;
-      allow delete:        if false;
+      allow read:   if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // Sign-up is gated: only the admin or an invited email may create a profile.
+      allow create: if isSignedIn() && request.auth.uid == uid && (isAdmin() || isInvited());
+      allow update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
 
       // ---- Daily logs subcollection: users/{uid}/days/{date} ----
       match /days/{date} {
-        allow read:                 if isSignedIn() && (request.auth.uid == uid || isAdmin());
+        allow read:                   if isSignedIn() && (request.auth.uid == uid || isAdmin());
         allow create, update, delete: if isSignedIn() && request.auth.uid == uid;
       }
     }

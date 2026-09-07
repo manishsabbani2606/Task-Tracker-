@@ -163,6 +163,16 @@
   .admin-controls label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
   .admin-controls select { min-width: 240px; }
   .admin-hint { font-size: 12.5px; color: var(--amber-ink); font-weight: 600; }
+  .invite-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .invite-head { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .invite-add { display: flex; gap: 8px; flex-wrap: wrap; }
+  .invite-add input { flex: 1; min-width: 200px; }
+  .invite-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .invite-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px 6px 5px 12px; }
+  .invite-chip button { border: none; background: transparent; color: var(--faint); cursor: pointer; font-size: 14px; line-height: 1; border-radius: 50%; width: 20px; height: 20px; }
+  .invite-chip button:hover { background: var(--red-soft); color: var(--red); }
+  .invite-note { font-size: 12px; color: var(--faint); margin-top: 8px; }
+  .invite-note.err { color: var(--red); }
   .viewing-other .btn-danger { display: none !important; }
   .viewing-banner { font-size: 12.5px; color: var(--amber-ink); font-weight: 600; margin-bottom: 12px; }
 
@@ -512,6 +522,15 @@
         <select id="adminUserSelect"></select>
         <span class="admin-hint" id="adminHint"></span>
       </div>
+      <div class="invite-box">
+        <div class="invite-head">Invited users — only these emails can sign up</div>
+        <div class="invite-add">
+          <input type="email" id="inviteEmail" placeholder="colleague@email.com" autocomplete="off">
+          <button class="btn btn-primary" id="inviteAddBtn" type="button">Invite</button>
+        </div>
+        <div class="invite-list" id="inviteList"></div>
+        <div class="invite-note" id="inviteNote"></div>
+      </div>
     </section>
 
     <section class="kpi-grid">
@@ -664,6 +683,7 @@ let currentUser = null;    // signed-in Firebase user
 let profile = null;        // { fullName, company, role, email }
 let viewingUid = null;     // set when admin is viewing another user (read-only)
 let viewingProfile = null;
+let pendingSignup = false;  // true while a sign-up completes its invite check
 const daySaveTimers = {};
 let daysUnsub = null;       // live Firestore listener for the active user's days
 
@@ -1503,6 +1523,62 @@ const adminBtn = document.getElementById("adminBtn");
 const adminBar = document.getElementById("adminBar");
 const adminUserSelect = document.getElementById("adminUserSelect");
 const adminHint = document.getElementById("adminHint");
+const inviteEmail = document.getElementById("inviteEmail");
+const inviteAddBtn = document.getElementById("inviteAddBtn");
+const inviteList = document.getElementById("inviteList");
+const inviteNote = document.getElementById("inviteNote");
+
+// ---- Invite list management (admin only) ----
+async function loadInvites() {
+  if (!inviteList) return;
+  inviteList.innerHTML = "";
+  try {
+    const snap = await db.collection("allowed_emails").get();
+    if (snap.empty) {
+      inviteNote.textContent = "No one invited yet — add an email above. (The admin email always has access.)";
+      inviteNote.className = "invite-note";
+      return;
+    }
+    inviteNote.textContent = "";
+    const emails = [];
+    snap.forEach(d => emails.push(d.id));
+    emails.sort();
+    emails.forEach(em => {
+      const chip = document.createElement("span");
+      chip.className = "invite-chip";
+      chip.textContent = em;
+      const x = document.createElement("button");
+      x.type = "button"; x.textContent = "✕"; x.title = "Remove invite";
+      x.addEventListener("click", async () => {
+        try { await db.collection("allowed_emails").doc(em).delete(); loadInvites(); }
+        catch (e) { inviteNote.textContent = "Couldn't remove — " + (e.message || e); inviteNote.className = "invite-note err"; }
+      });
+      chip.appendChild(x);
+      inviteList.appendChild(chip);
+    });
+  } catch (e) {
+    inviteNote.textContent = "Couldn't load the invite list. Make sure the updated Firestore rules are published.";
+    inviteNote.className = "invite-note err";
+  }
+}
+if (inviteAddBtn) inviteAddBtn.addEventListener("click", async () => {
+  const em = (inviteEmail.value || "").trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { inviteNote.textContent = "Enter a valid email."; inviteNote.className = "invite-note err"; return; }
+  try {
+    await db.collection("allowed_emails").doc(em).set({
+      addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      addedBy: (currentUser && currentUser.email) || ""
+    });
+    inviteEmail.value = "";
+    inviteNote.textContent = "Invited " + em + " — they can now sign up.";
+    inviteNote.className = "invite-note";
+    loadInvites();
+  } catch (e) {
+    inviteNote.textContent = "Couldn't add — make sure the updated Firestore rules are published. (" + (e.message || e) + ")";
+    inviteNote.className = "invite-note err";
+  }
+});
+if (inviteEmail) inviteEmail.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); inviteAddBtn.click(); } });
 
 function initials(name) {
   const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -1549,16 +1625,31 @@ signUpForm.addEventListener("submit", async (e) => {
   if (pw !== pw2) { authError("Passwords do not match."); return; }
   const btn = signUpForm.querySelector("button[type=submit]");
   btn.disabled = true;
+  pendingSignup = true;   // let this handler drive startApp, not onAuthStateChanged
   try {
     const cred = await auth.createUserWithEmailAndPassword(email, pw);
-    await db.collection("users").doc(cred.user.uid).set({
-      fullName: name, company, role, email,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    try {
+      // This write is allowed by the security rules only for an invited email
+      // (or the admin). If the email isn't invited, it is rejected here.
+      await db.collection("users").doc(cred.user.uid).set({
+        fullName: name, company, role, email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch (perr) {
+      // Not on the invite list — roll back the just-created account.
+      try { await cred.user.delete(); } catch (e2) {}
+      pendingSignup = false;
+      btn.disabled = false;
+      authError("This site is invite-only. Ask your admin to add " + email + " to the invited users.");
+      return;
+    }
+    pendingSignup = false;
     signUpForm.reset();
-    // onAuthStateChanged starts the app.
-  } catch (err) { authError(friendlyAuthError(err)); }
-  finally { btn.disabled = false; }
+    startApp(cred.user);
+  } catch (err) {
+    pendingSignup = false;
+    authError(friendlyAuthError(err));
+  } finally { btn.disabled = false; }
 });
 
 signInForm.addEventListener("submit", async (e) => {
@@ -1647,7 +1738,7 @@ async function startApp(user) {
   userName.textContent = profile.fullName || user.email;
   userRole.textContent = profile.role ? profile.role + (profile.company ? " · " + profile.company : "") : (profile.company || "");
   userAvatar.textContent = initials(profile.fullName || user.email);
-  if (isAdmin()) { adminBtn.hidden = false; await populateAdminUsers(); }
+  if (isAdmin()) { adminBtn.hidden = false; await populateAdminUsers(); loadInvites(); }
   else { adminBtn.hidden = true; adminBar.hidden = true; }
   setViewingClass();
   authScreen.hidden = true;
@@ -1669,6 +1760,7 @@ function showAuthScreen() {
 
 // Single source of truth for who is signed in.
 auth.onAuthStateChanged(user => {
+  if (pendingSignup) return;   // the sign-up handler drives startApp itself
   if (user) startApp(user);
   else showAuthScreen();
 });
