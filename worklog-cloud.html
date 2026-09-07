@@ -1561,6 +1561,28 @@ async function loadInvites() {
     inviteNote.className = "invite-note err";
   }
 }
+const SITE_URL = "https://manishsabbani2606.github.io/Task-Tracker-/";
+function inviteEmailText(em) {
+  return "Hi,\n\nYou've been invited to Work Log — a simple tool for logging daily tasks and hours and exporting a weekly report.\n\n" +
+    "Getting started:\n1. Open " + SITE_URL + "\n2. Click \"Create account\" and sign up using THIS email address (" + em + ").\n3. Choose a password and you're in.\n\n" +
+    "Your entries are private to you; as the administrator I can view timesheets for reporting. Please don't record anything confidential.\n\n" +
+    "Thanks,\nManish Kumar Sabbani\nTechSquad LLC";
+}
+function inviteEmailHtml(em) {
+  return '<div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:520px;margin:auto;color:#22303f;font-size:15px;line-height:1.5">' +
+    '<div style="background:#4f46e5;color:#fff;padding:20px 24px;border-radius:12px 12px 0 0;font-size:18px;font-weight:700">Work Log</div>' +
+    '<div style="border:1px solid #e6e8ec;border-top:none;border-radius:0 0 12px 12px;padding:22px 24px">' +
+    '<p>Hi,</p>' +
+    "<p>You've been invited to <b>Work Log</b> — a simple tool for logging daily tasks and hours and exporting a weekly report.</p>" +
+    '<p><b>Getting started:</b></p>' +
+    '<ol><li>Open the site (button below)</li>' +
+    '<li>Click <b>Create account</b> and sign up using <b>this email address</b> (' + em + ')</li>' +
+    "<li>Choose a password — and you're in.</li></ol>" +
+    '<p style="text-align:center;margin:22px 0"><a href="' + SITE_URL + '" style="background:#4f46e5;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600;display:inline-block">Open Work Log</a></p>' +
+    '<p style="font-size:13px;color:#5b6572">Your entries are private to you; as the administrator I can view timesheets for reporting. Please don\'t record anything confidential.</p>' +
+    '<p style="margin-bottom:0">Thanks,<br><b>Manish Kumar Sabbani</b><br>TechSquad LLC</p>' +
+    '</div></div>';
+}
 if (inviteAddBtn) inviteAddBtn.addEventListener("click", async () => {
   const em = (inviteEmail.value || "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { inviteNote.textContent = "Enter a valid email."; inviteNote.className = "invite-note err"; return; }
@@ -1569,14 +1591,24 @@ if (inviteAddBtn) inviteAddBtn.addEventListener("click", async () => {
       addedAt: firebase.firestore.FieldValue.serverTimestamp(),
       addedBy: (currentUser && currentUser.email) || ""
     });
-    inviteEmail.value = "";
-    inviteNote.textContent = "Invited " + em + " — they can now sign up.";
-    inviteNote.className = "invite-note";
-    loadInvites();
   } catch (e) {
     inviteNote.textContent = "Couldn't add — make sure the updated Firestore rules are published. (" + (e.message || e) + ")";
     inviteNote.className = "invite-note err";
+    return;
   }
+  // Queue the invite email — sent automatically when the Trigger Email extension is set up.
+  let emailed = false;
+  try {
+    await db.collection("mail").add({
+      to: [em],
+      message: { subject: "You're invited to Work Log", html: inviteEmailHtml(em), text: inviteEmailText(em) }
+    });
+    emailed = true;
+  } catch (e) { /* email delivery not set up yet — the invite is still added */ }
+  inviteEmail.value = "";
+  inviteNote.textContent = "Invited " + em + (emailed ? " — invite email sent." : " — added to the list (email delivery not set up yet).");
+  inviteNote.className = "invite-note";
+  loadInvites();
 });
 if (inviteEmail) inviteEmail.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); inviteAddBtn.click(); } });
 
