@@ -526,7 +526,8 @@
         <div class="invite-head">Invited users — only these emails can sign up</div>
         <div class="invite-add">
           <input type="email" id="inviteEmail" placeholder="colleague@email.com" autocomplete="off">
-          <button class="btn btn-primary" id="inviteAddBtn" type="button">Invite</button>
+          <button class="btn btn-primary" id="inviteAddBtn" type="button">Invite &amp; email</button>
+          <button class="btn btn-secondary" id="inviteCopyBtn" type="button" hidden>Copy invite text</button>
         </div>
         <div class="invite-list" id="inviteList"></div>
         <div class="invite-note" id="inviteNote"></div>
@@ -1568,33 +1569,53 @@ function inviteEmailText(em) {
     "Your entries are private to you; as the administrator I can view timesheets for reporting. Please don't record anything confidential.\n\n" +
     "Thanks,\nManish Kumar Sabbani\nTechSquad LLC";
 }
-if (inviteAddBtn) inviteAddBtn.addEventListener("click", async () => {
+const inviteCopyBtn = document.getElementById("inviteCopyBtn");
+let lastInvite = null;   // { em, subject, body } of the most recent invite
+
+if (inviteCopyBtn) inviteCopyBtn.addEventListener("click", async () => {
+  if (!lastInvite) return;
+  const text = "To: " + lastInvite.em + "\nSubject: " + lastInvite.subject + "\n\n" + lastInvite.body;
+  try {
+    await navigator.clipboard.writeText(text);
+    inviteNote.textContent = "Invite text copied — paste it into a new email to " + lastInvite.em + ".";
+    inviteNote.className = "invite-note";
+  } catch (e) { window.prompt("Copy the invite text:", text); }
+});
+
+if (inviteAddBtn) inviteAddBtn.addEventListener("click", () => {
   const em = (inviteEmail.value || "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { inviteNote.textContent = "Enter a valid email."; inviteNote.className = "invite-note err"; return; }
-  try {
-    await db.collection("allowed_emails").doc(em).set({
-      addedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      addedBy: (currentUser && currentUser.email) || ""
-    });
-  } catch (e) {
-    inviteNote.textContent = "Couldn't add — make sure the Firestore rules are published. (" + (e.message || e) + ")";
-    inviteNote.className = "invite-note err";
-    return;
-  }
-  inviteEmail.value = "";
-  inviteNote.textContent = "Invited " + em + " — opening a pre-filled email for you to send.";
-  inviteNote.className = "invite-note";
-  loadInvites();
-  // Open the admin's email app with the invite pre-filled (they just press Send).
   const subject = "You're invited to Work Log";
-  const mailto = "mailto:" + encodeURIComponent(em) +
-    "?subject=" + encodeURIComponent(subject) +
-    "&body=" + encodeURIComponent(inviteEmailText(em));
-  const a = document.createElement("a");
-  a.href = mailto;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  const body = inviteEmailText(em);
+  lastInvite = { em: em, subject: subject, body: body };
+  if (inviteCopyBtn) inviteCopyBtn.hidden = false;
+
+  // Open a pre-filled compose window NOW — synchronously inside the click, which
+  // is what browsers require to launch email. Gmail first (reliable in-browser),
+  // then the OS mail app as a fallback if the popup is blocked.
+  const gmail = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(em) +
+    "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  let win = null;
+  try { win = window.open(gmail, "_blank"); } catch (e) {}
+  if (!win) {
+    const a = document.createElement("a");
+    a.href = "mailto:" + encodeURIComponent(em) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // Record the invite in the allow-list (so this email can sign up).
+  db.collection("allowed_emails").doc(em).set({
+    addedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    addedBy: (currentUser && currentUser.email) || ""
+  }).then(() => {
+    inviteEmail.value = "";
+    inviteNote.textContent = "Invited " + em + ". A compose window should open — if it didn't, click “Copy invite text” and paste it into an email.";
+    inviteNote.className = "invite-note";
+    loadInvites();
+  }).catch(e => {
+    inviteNote.textContent = "Couldn't save the invite — is the Firestore rule published? (" + (e.message || e) + ")";
+    inviteNote.className = "invite-note err";
+  });
 });
 if (inviteEmail) inviteEmail.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); inviteAddBtn.click(); } });
 
