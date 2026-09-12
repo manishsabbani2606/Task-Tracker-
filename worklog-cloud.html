@@ -205,6 +205,9 @@
   }
   .auth-submit { width: 100%; justify-content: center; padding: 12px; margin-top: 6px; font-size: 14px; }
   .auth-forgot { text-align: right; margin-top: -4px; }
+  .auth-options { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -2px; flex-wrap: wrap; }
+  .auth-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .auth-check input { width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; }
   .auth-link { background: none; border: none; color: var(--brand-ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 2px; }
   .auth-link:hover { text-decoration: underline; }
   .auth-msg { min-height: 17px; margin-top: 12px; font-size: 12.5px; font-weight: 600; text-align: center; }
@@ -507,7 +510,10 @@
       <label>Password
         <input type="password" id="siPw" placeholder="Your password" autocomplete="current-password">
       </label>
-      <div class="auth-forgot"><button type="button" class="auth-link" id="forgotBtn">Forgot password?</button></div>
+      <div class="auth-options">
+        <label class="auth-check"><input type="checkbox" id="rememberMe"> Keep me signed in</label>
+        <button type="button" class="auth-link" id="forgotBtn">Forgot password?</button>
+      </div>
       <button type="submit" class="btn btn-primary auth-submit">Sign in</button>
     </form>
 
@@ -1577,6 +1583,7 @@ const signUpForm = document.getElementById("signUpForm");
 const authMsg = document.getElementById("authMsg");
 const siEmail = document.getElementById("siEmail");
 const siPw = document.getElementById("siPw");
+const rememberMe = document.getElementById("rememberMe");
 const suName = document.getElementById("suName");
 const suCompany = document.getElementById("suCompany");
 const suRole = document.getElementById("suRole");
@@ -1730,6 +1737,7 @@ signUpForm.addEventListener("submit", async (e) => {
   btn.disabled = true;
   pendingSignup = true;   // let this handler drive startApp, not onAuthStateChanged
   try {
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
     const cred = await auth.createUserWithEmailAndPassword(email, pw);
     try {
       // This write is allowed by the security rules only for an invited email
@@ -1763,6 +1771,11 @@ signInForm.addEventListener("submit", async (e) => {
   const btn = signInForm.querySelector("button[type=submit]");
   btn.disabled = true;
   try {
+    // Persistence: LOCAL keeps you signed in after closing the browser;
+    // SESSION (default) signs you out when the tab/browser is closed.
+    await auth.setPersistence(rememberMe && rememberMe.checked
+      ? firebase.auth.Auth.Persistence.LOCAL
+      : firebase.auth.Auth.Persistence.SESSION);
     await auth.signInWithEmailAndPassword(email, pw);
     siPw.value = "";
   } catch (err) { authError(friendlyAuthError(err)); }

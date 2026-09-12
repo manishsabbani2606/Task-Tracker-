@@ -202,6 +202,9 @@
   }
   .auth-submit { width: 100%; justify-content: center; padding: 12px; margin-top: 6px; font-size: 14px; }
   .auth-forgot { text-align: right; margin-top: -4px; }
+  .auth-options { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -2px; flex-wrap: wrap; }
+  .auth-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .auth-check input { width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; }
   .auth-link { background: none; border: none; color: var(--brand-ink); font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 2px; }
   .auth-link:hover { text-decoration: underline; }
   .auth-msg { min-height: 17px; margin-top: 12px; font-size: 12.5px; font-weight: 600; text-align: center; }
@@ -485,7 +488,10 @@
       <label>Password
         <input type="password" id="siPw" placeholder="Your password" autocomplete="current-password">
       </label>
-      <div class="auth-forgot"><button type="button" class="auth-link" id="forgotBtn">Forgot password?</button></div>
+      <div class="auth-options">
+        <label class="auth-check"><input type="checkbox" id="rememberMe"> Keep me signed in</label>
+        <button type="button" class="auth-link" id="forgotBtn">Forgot password?</button>
+      </div>
       <button type="submit" class="btn btn-primary auth-submit">Sign in</button>
     </form>
 
@@ -1643,6 +1649,16 @@ if ("showSaveFilePicker" in window) {
 // ---- Accounts & login (local, on-device profiles) ----
 const ACCTS_KEY = "ttAccounts";
 const SESSION_KEY = "ttSession";
+const rememberMe = document.getElementById("rememberMe");
+// Session persistence: "remember" keeps you signed in after the browser closes
+// (localStorage); otherwise the session ends when the tab/browser is closed
+// (sessionStorage).
+function setSession(id, remember) {
+  if (remember) { localStorage.setItem(SESSION_KEY, id); sessionStorage.removeItem(SESSION_KEY); }
+  else { sessionStorage.setItem(SESSION_KEY, id); localStorage.removeItem(SESSION_KEY); }
+}
+function getSession() { return sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY); }
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); localStorage.removeItem(SESSION_KEY); }
 const LEGACY_FLAG = "ttLegacyMigrated";
 
 const authScreen = document.getElementById("authScreen");
@@ -1725,7 +1741,7 @@ function startApp(account) {
 }
 
 function logout() {
-  localStorage.removeItem(SESSION_KEY);
+  clearSession();
   currentAccount = null;
   data = {};
   appRoot.hidden = true;
@@ -1760,7 +1776,7 @@ signUpForm.addEventListener("submit", async (e) => {
     localStorage.setItem(STORAGE_KEY + "::" + acct.id, localStorage.getItem(STORAGE_KEY));
     localStorage.setItem(LEGACY_FLAG, "1");
   }
-  localStorage.setItem(SESSION_KEY, acct.id);
+  setSession(acct.id, false);
   signUpForm.reset();
   startApp(acct);
 });
@@ -1774,7 +1790,7 @@ signInForm.addEventListener("submit", async (e) => {
   if (!acct) { authError("No account found with that email."); return; }
   const hash = await hashPassword(pw, acct.salt);
   if (hash !== acct.hash) { authError("Incorrect password."); return; }
-  localStorage.setItem(SESSION_KEY, acct.id);
+  setSession(acct.id, rememberMe && rememberMe.checked);
   siPw.value = "";
   startApp(acct);
 });
@@ -1789,7 +1805,7 @@ if (forgotBtn) forgotBtn.addEventListener("click", () => {
 
 // Boot: resume an existing session, otherwise show the login screen.
 (function boot() {
-  const sid = localStorage.getItem(SESSION_KEY);
+  const sid = getSession();
   if (sid) {
     const acct = Object.values(loadAccounts()).find(a => a.id === sid);
     if (acct) { startApp(acct); return; }
