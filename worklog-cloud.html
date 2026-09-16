@@ -13,20 +13,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f4f5f7;
+    --bg: #f5f4f2;
     --surface: #ffffff;
-    --surface-2: #f8fafc;
+    --surface-2: #faf9f7;
     --field: #ffffff;
-    --border: #e6e8ec;
-    --border-strong: #d4d8df;
-    --ink: #0f172a;
-    --text: #2b3444;
-    --muted: #697586;
-    --faint: #98a2b3;
-    --brand: #4f46e5;
-    --brand-hover: #4338ca;
-    --brand-soft: #eef2ff;
-    --brand-ink: #4338ca;
+    --border: #e7e5e2;
+    --border-strong: #d6d3ce;
+    --ink: #1c1917;
+    --text: #33302c;
+    --muted: #6b6660;
+    --faint: #a8a29e;
+    --brand: #d97706;
+    --brand-hover: #b45309;
+    --brand-soft: #fef3c7;
+    --brand-ink: #b45309;
+    --graphite: #1f2937;
+    --graphite-2: #374151;
     --green: #059669; --green-soft: #e7f7f0; --green-ink: #047857;
     --amber: #d97706; --amber-soft: #fdf3e6; --amber-ink: #b45309;
     --red: #dc2626; --red-soft: #fdeceb; --red-ink: #b91c1c;
@@ -37,20 +39,22 @@
     --r: 14px; --r-sm: 10px; --r-xs: 8px;
   }
   :root[data-theme="dark"] {
-    --bg: #0b1020;
-    --surface: #131a2b;
-    --surface-2: #0f1626;
-    --field: #0f1728;
-    --border: #26304a;
-    --border-strong: #39456a;
-    --ink: #f1f5f9;
-    --text: #dbe2ec;
-    --muted: #93a0b5;
-    --faint: #6d7a92;
-    --brand: #6366f1;
-    --brand-hover: #818cf8;
-    --brand-soft: #1d2547;
-    --brand-ink: #a5b4fc;
+    --bg: #15161a;
+    --surface: #1f2126;
+    --surface-2: #191b20;
+    --field: #191c22;
+    --border: #33363d;
+    --border-strong: #474b54;
+    --ink: #f4f4f5;
+    --text: #dcdcdf;
+    --muted: #a0a0a8;
+    --faint: #74747e;
+    --brand: #f59e0b;
+    --brand-hover: #fbbf24;
+    --brand-soft: #3a2c12;
+    --brand-ink: #fcd34d;
+    --graphite: #111827;
+    --graphite-2: #1f2937;
     --green: #34d399; --green-soft: #102e28; --green-ink: #6ee7b7;
     --amber: #fbbf24; --amber-soft: #32280f; --amber-ink: #fcd34d;
     --red: #f87171; --red-soft: #391f22; --red-ink: #fca5a5;
@@ -90,7 +94,7 @@
   .brand { display: flex; align-items: center; gap: 12px; }
   .brand-mark {
     width: 38px; height: 38px; border-radius: 11px;
-    background: linear-gradient(135deg, var(--brand), #8079ff);
+    background: linear-gradient(135deg, var(--graphite), var(--graphite-2));
     color: #fff; display: grid; place-items: center;
     box-shadow: var(--shadow-md);
   }
@@ -110,7 +114,7 @@
   .user-chip { display: flex; align-items: center; gap: 10px; }
   .avatar {
     width: 36px; height: 36px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--brand), #8079ff);
+    background: linear-gradient(135deg, var(--graphite), var(--graphite-2));
     color: #fff; font-weight: 700; font-size: 13px;
     display: grid; place-items: center; flex-shrink: 0;
   }
@@ -599,16 +603,16 @@
   :root[data-glass="on"]:not([data-theme="dark"]) body {
     background:
       radial-gradient(1200px 760px at 6% -8%, color-mix(in srgb, var(--brand) 42%, transparent), transparent 58%),
-      radial-gradient(1000px 720px at 100% -4%, rgba(56, 189, 248, 0.40), transparent 54%),
-      radial-gradient(1000px 820px at 50% 118%, rgba(236, 72, 153, 0.30), transparent 56%),
+      radial-gradient(1000px 720px at 100% -4%, rgba(56, 189, 248, 0.32), transparent 54%),
+      radial-gradient(1000px 820px at 50% 118%, rgba(245, 158, 11, 0.30), transparent 56%),
       var(--bg);
     background-attachment: fixed;
   }
   :root[data-glass="on"][data-theme="dark"] body {
     background:
-      radial-gradient(1200px 760px at 6% -8%, rgba(99, 102, 241, 0.42), transparent 58%),
-      radial-gradient(1000px 720px at 100% -4%, rgba(14, 165, 233, 0.34), transparent 54%),
-      radial-gradient(1000px 820px at 50% 118%, rgba(217, 70, 239, 0.28), transparent 56%),
+      radial-gradient(1200px 760px at 6% -8%, rgba(217, 119, 6, 0.34), transparent 58%),
+      radial-gradient(1000px 720px at 100% -4%, rgba(14, 165, 233, 0.26), transparent 54%),
+      radial-gradient(1000px 820px at 50% 118%, rgba(245, 158, 11, 0.24), transparent 56%),
       var(--bg);
     background-attachment: fixed;
   }
@@ -1606,11 +1610,11 @@ exportPdfBtn.addEventListener("click", () => {
   const totalHours = days.reduce((sum, d) => sum + d.hours, 0);
   const totalTaskMinutes = days.reduce((sum, d) => sum + d.taskMinutes, 0);
 
-  const PURPLE = [79, 70, 229];
-  const PURPLE_SOFT = [238, 242, 255];
-  const STRIPE = [248, 250, 252];
-  const GRID = [224, 227, 234];
-  const GRAY = [105, 117, 134];
+  const PURPLE = [31, 41, 55];         // graphite — header banner & table headers
+  const PURPLE_SOFT = [254, 243, 199]; // amber-soft — summary card background
+  const STRIPE = [250, 249, 247];
+  const GRID = [231, 229, 226];
+  const GRAY = [107, 102, 96];
 
   let y = 0;
 
@@ -1660,7 +1664,7 @@ exportPdfBtn.addEventListener("click", () => {
   ].forEach(card => {
     doc.setFillColor(...PURPLE_SOFT);
     doc.roundedRect(card.x, y, cardW, cardH, 6, 6, "F");
-    doc.setTextColor(67, 56, 202);
+    doc.setTextColor(180, 83, 9);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8.5);
     doc.text(card.label, card.x + 14, y + 20);
